@@ -1,5 +1,5 @@
 {
-    "name": "muk/image-helpers",
+    "name": "muk/image_helpers",
     "version": "0.1.0-alpha1",
     
     "description": "Extension providing helpers for generating images",
