@@ -1,0 +1,45 @@
+{
+    "name": "muk/image-helpers",
+    "version": "0.1.0-alpha1",
+    
+    "description": "Extension providing helpers for generating images",
+    "keywords": ["contao", "extension", "helper", "images", "muk"],
+    "type": "contao-module",
+    "homepage": "https://github.com/hojak/contao_muk_images",
+    "license": "LGPL-3.0+",
+    
+    "authors": [
+        {
+            "name": "Holger Janßen-Kroll",
+            "email": "contao@holgerjanssen.de",
+            "homepage": "https://ho-jk.de"
+        }
+    ],
+
+    "support":{
+        "issues":"https://github.com/hojak/contao_muk_images/issues",
+        "source":"https://github.com/hojak/contao_muk_images"
+    },
+    
+    "require": {
+        "php": ">=5.3",
+ 
+        "contao/core-bundle" : "~3.5.27 || ~4.4", 
+        
+        "contao-community-alliance/composer-plugin": "*"
+    },
+
+    "autoload": {
+        "classmap": [""]
+    },
+    
+    "extra": {
+        "contao": {
+            "sources": {
+                "src/": "system/modules/muk_images/"
+            } 
+        }
+    }
+
+
+}
