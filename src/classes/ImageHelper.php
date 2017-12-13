@@ -123,7 +123,6 @@ class ImageHelper extends \Controller {
 		$joinImage = new \Imagick ( $config['join_image'] );
 		if ( $config['join_scale']) {
 			$joinImage->scaleImage ( $config['join_scale'][0], $config['join_scale'][1]);
-			log_message ( "scaled! ");
 		}
 		$createImage->compositeImage ( $joinImage,\Imagick::COMPOSITE_DEFAULT, $config['join_position'][0], $config['join_position'][1]);
 
