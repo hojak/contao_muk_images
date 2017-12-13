@@ -1,6 +1,6 @@
 {
     "name": "muk/image_helpers",
-    "version": "0.1.0-alpha1",
+    "version": "0.1.0",
     
     "description": "Extension providing helpers for generating images",
     "keywords": ["contao", "extension", "helper", "images", "muk"],
@@ -23,10 +23,7 @@
     
     "require": {
         "php": ">=5.3",
- 
         "contao/core-bundle" : "~3.5.27 || ~4.4", 
-        
-        "contao-community-alliance/composer-plugin": "*"
     },
 
     "autoload": {
@@ -40,6 +37,4 @@
             } 
         }
     }
-
-
 }
