@@ -12,10 +12,25 @@ class ImageHelper extends \Controller {
 	/**
 	 * standard configuration, override via $GLOBALS['TL_CONFIG']['MUK_IMAGE_TYPES'] = array ( "type" => array ( ... ) );
 	 * in the localconfig.php file of your contao installation
+	 * 
+	 * A configuration consists of the following elements:
+	 * join_image:     path to the image, that has to be joined into 
+	 * join_position:  top/left position for joining the image as array
+	 * join_scale:     target size for the joined image
+	 * circle_color:   (css) color of the circle around the original image
+     * target_size:    size of the image to generate as array
+	 * source_size:    to this size (as array), the original image will be scaled to
+	 * crop_left:      pixels to crop from the left side of the generated image
+	 * crop_right:     pixels to crop right
+	 * crop_top:       pixels to crop top
+	 * crop_bottom:    pixels to crop bottom
+	 * background:     css color (or 'transparent') for the generated image
+	 * file_suffix:    suffix for the generated images file in the cache directory
+	 * 
 	 **/
 	private static $configuration = array (
 		"left" => array (
-			"join_image"    => 'system/modules/muk_images/assets/img/arrow-right.png',
+			"join_image"    => 'system/modules/muk_images/assets/img/arrow-right.png', 
 			'join_position' => array (206, 10),
 			"join_scale"    => array (54,54),
 			'circle_color'  => '#ffffff',
@@ -37,7 +52,9 @@ class ImageHelper extends \Controller {
 	 * @return array 
 	 */
 	private static function getConfig ( $type ) {
-		if ( array_key_exists ( self::TL_CONFIG_PARAMETER, $GLOBALS['TL_CONFIG'])) {
+		if ( is_array ( $type ) ) {
+			return $type;
+		} else if ( array_key_exists ( self::TL_CONFIG_PARAMETER, $GLOBALS['TL_CONFIG'])) {
 			return @$GLOBALS['TL_CONFIG'][ self::TL_CONFIG_PARAMETER][ $type ];
 		} else {
 			return @self::$configuration[$type];
@@ -66,7 +83,7 @@ class ImageHelper extends \Controller {
 	 * create an image and return a corresponding image tag
 	 * 
 	 * @param string $image  uid or path 
-	 * @param string $type	 configuration type for the image to generate 
+	 * @param mixed $type	 configuration type for the image to generate  or complete configuration array 
 	 * @param array $htmlAttributes	array with attributes for the html tag 
 	 * @return  string	html img tag
 	 */
