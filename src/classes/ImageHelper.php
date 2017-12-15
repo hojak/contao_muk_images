@@ -94,6 +94,11 @@ class ImageHelper extends \Controller {
 			return "<b>Keine Konfiguration für Typ '" . $type. "'!</b>";
 		}
 
+		if ( is_string ( $image ) && strpos ( $image, " ") !== false ) {
+			return "<b>Fehler: Der Dateiname des Bildes enthält Leerzeichen!</b>";
+		}
+
+
 		$contaoImage = self::getContaoImage ( $image, $config['source_size'][0], $config ['source_size'][1] );
 		$targetPath = $contaoImage . "-" . $config['file_suffix'] . ".png";
 
