@@ -76,7 +76,11 @@ class ImageHelper extends \Controller {
 		  	$image = $imgFile->path;
 		}
 
-		return \Image::get ( $image, $width, $height, "crop" );
+		if ( strpos ( $image, " ") !== false ) {
+			return array ( null, "<b>Fehler: Der Dateiname des Bildes enthält Leerzeichen!</b>");
+		}
+
+		return array ( \Image::get ( $image, $width, $height, "crop" ), null );
 	}
 
 	/**
@@ -94,12 +98,9 @@ class ImageHelper extends \Controller {
 			return "<b>Keine Konfiguration für Typ '" . $type. "'!</b>";
 		}
 
-		if ( is_string ( $image ) && strpos ( $image, " ") !== false ) {
-			return "<b>Fehler: Der Dateiname des Bildes enthält Leerzeichen!</b>";
-		}
-
-
-		$contaoImage = self::getContaoImage ( $image, $config['source_size'][0], $config ['source_size'][1] );
+		list ( $contaoImage, $errorMsg) = self::getContaoImage ( $image, $config['source_size'][0], $config ['source_size'][1] );
+		if( $errorMsg ) return $errorMsg;
+		
 		$targetPath = $contaoImage . "-" . $config['file_suffix'] . ".png";
 
 		if ( ! $contaoImage ) {
