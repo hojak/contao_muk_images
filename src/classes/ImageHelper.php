@@ -76,7 +76,7 @@ class ImageHelper extends \Controller {
 		  	$image = $imgFile->path;
 		}
 
-		if ( strpos ( $image, " ") !== false ) {
+		if ( is_string ( $image ) && strpos ( $image, " ") !== false ) {
 			return array ( null, "<b>Fehler: Der Dateiname des Bildes enthält Leerzeichen!</b>");
 		}
 
