@@ -65,19 +65,24 @@ class ImageHelper extends \Controller {
 	 * Get an image object for the given file path or uuid and scale it to the given size.
 	 * If an important part is set for the image, it will be used.
 	 * 
-	 * @param string $image  path or uuid 
+	 * @param string $image  file object, path or uuid 
 	 * @param int $width 
 	 * @param int $height 
 	 * @return string	path of the generated image 
 	 */
 	private static function getContaoImage ( $image, $width, $height ) {
-		if ( \Validator::isUuid( $image ) ) {
+		if ( is_a ( $image, "Contao\\File")) {
+			$image = "" . $image->path;
+		} elseif ( \Validator::isUuid( $image ) ) {
 			$imgFile = \FilesModel::findByPk ( $image );
 		  	$image = $imgFile->path;
 		}
 
+
 		if ( strpos ( $image, " ") !== false ) {
-			return array ( null, "<b>Fehler: Der Dateiname des Bildes enthält Leerzeichen!</b>");
+			return array ( null, "<b>Fehler: Der Pfad des Bildes enthält Leerzeichen!</b>");
+		} else if ( ! preg_match ( '#^[a-zA-Z0-9/_\\.\\-]+$#i', $image)) {
+			return array ( null, "<b>Fehler: Der Pfad des Bildes darf und Buchstaben, Zahlen, - und _ enthalten!</b> " . $image);
 		}
 
 		return array ( \Image::get ( $image, $width, $height, "crop" ), null );
