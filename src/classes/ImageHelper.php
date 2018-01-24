@@ -6,15 +6,15 @@ namespace MUK\Images;
  * ImageHelper class, provides a generator for special newsletter images
  * */
 class ImageHelper extends \Controller {
-	
+
 	const TL_CONFIG_PARAMETER = "MUK_IMAGE_TYPES";
-	
+
 	/**
 	 * standard configuration, override via $GLOBALS['TL_CONFIG']['MUK_IMAGE_TYPES'] = array ( "type" => array ( ... ) );
 	 * in the localconfig.php file of your contao installation
-	 * 
+	 *
 	 * A configuration consists of the following elements:
-	 * join_image:     path to the image, that has to be joined into 
+	 * join_image:     path to the image, that has to be joined into
 	 * join_position:  top/left position for joining the image as array
 	 * join_scale:     target size for the joined image
 	 * circle_color:   (css) color of the circle around the original image
@@ -26,11 +26,11 @@ class ImageHelper extends \Controller {
 	 * crop_bottom:    pixels to crop bottom
 	 * background:     css color (or 'transparent') for the generated image
 	 * file_suffix:    suffix for the generated images file in the cache directory
-	 * 
+	 *
 	 **/
 	private static $configuration = array (
 		"left" => array (
-			"join_image"    => 'system/modules/muk_images/assets/img/arrow-right.png', 
+			"join_image"    => 'system/modules/muk_images/assets/img/arrow-right.png',
 			'join_position' => array (206, 10),
 			"join_scale"    => array (54,54),
 			'circle_color'  => '#ffffff',
@@ -44,12 +44,12 @@ class ImageHelper extends \Controller {
 			'file_suffix'   => 'nl',
 		),
 	);
-	
+
 	/**
- 	 * get the configuration for the given type 
-	 * 
-	 * @param string $type 
-	 * @return array 
+ 	 * get the configuration for the given type
+	 *
+	 * @param string $type
+	 * @return array
 	 */
 	private static function getConfig ( $type ) {
 		if ( is_array ( $type ) ) {
@@ -64,11 +64,19 @@ class ImageHelper extends \Controller {
 	/**
 	 * Get an image object for the given file path or uuid and scale it to the given size.
 	 * If an important part is set for the image, it will be used.
+<<<<<<< HEAD
 	 * 
 	 * @param string $image  file object, path or uuid 
 	 * @param int $width 
 	 * @param int $height 
 	 * @return string	path of the generated image 
+=======
+	 *
+	 * @param string $image  path or uuid
+	 * @param int $width
+	 * @param int $height
+	 * @return string	path of the generated image
+>>>>>>> 129797be782b22a4e97002017a169017a67cc971
 	 */
 	private static function getContaoImage ( $image, $width, $height ) {
 		if ( is_a ( $image, "Contao\\File")) {
@@ -77,7 +85,6 @@ class ImageHelper extends \Controller {
 			$imgFile = \FilesModel::findByPk ( $image );
 		  	$image = $imgFile->path;
 		}
-
 
 		if ( strpos ( $image, " ") !== false ) {
 			return array ( null, "<b>Fehler: Der Pfad des Bildes enthält Leerzeichen!</b>");
@@ -88,12 +95,29 @@ class ImageHelper extends \Controller {
 		return array ( \Image::get ( $image, $width, $height, "crop" ), null );
 	}
 
+
+    /**
+     * get the name for the image file to generate
+     *
+     * @param string $orig   original image name
+     * @param string $suffix configuration suffix
+     * @return
+     */
+    private static function getTargetFile ( $orig, $suffix ) {
+        // trim original suffix
+        // necessary to bug in Email-Class
+        $name = substr ( $orig, 0, strrpos ( $orig, "."));
+
+        return $name . "-" . $suffix . ".png";
+    }
+
+
 	/**
 	 * create an image and return a corresponding image tag
-	 * 
-	 * @param string $image  uid or path 
-	 * @param mixed $type	 configuration type for the image to generate  or complete configuration array 
-	 * @param array $htmlAttributes	array with attributes for the html tag 
+	 *
+	 * @param string $image  uid or path
+	 * @param mixed $type	 configuration type for the image to generate  or complete configuration array
+	 * @param array $htmlAttributes	array with attributes for the html tag
 	 * @return  string	html img tag
 	 */
 	public static function generate ( $image, $type = "left", $htmlAttributes = array () ) {
@@ -105,8 +129,8 @@ class ImageHelper extends \Controller {
 
 		list ( $contaoImage, $errorMsg) = self::getContaoImage ( $image, $config['source_size'][0], $config ['source_size'][1] );
 		if( $errorMsg ) return $errorMsg;
-		
-		$targetPath = $contaoImage . "-" . $config['file_suffix'] . ".png";
+
+		$targetPath = self::getTargetFile ( $contaoImage , $config['file_suffix'] );
 
 		if ( ! $contaoImage ) {
 			return "<b>Fehler beim Auslesen des Orginal-Bildes!</b>";
@@ -118,7 +142,7 @@ class ImageHelper extends \Controller {
 		$createImage->newImage ( $config['target_size'][0], $config['target_size'][1], new \ImagickPixel( $config['background'] ));
 		$createImage->setImageFormat ('png');
 
-		
+
 		// draw frame circle
 		$drawCircle = new \ImagickDraw ();
 		$drawCircle->setStrokeAntialias ( true );
@@ -127,7 +151,7 @@ class ImageHelper extends \Controller {
 
 		$createImage->drawImage ( $drawCircle );
 
-		
+
 		// add cut part from the existing image
 		$mask = new \Imagick();
 		$mask->newImage ( $config['source_size'][0], $config['source_size'][1], new \ImagickPixel ('transparent') );
@@ -136,16 +160,16 @@ class ImageHelper extends \Controller {
 		$drawMaskCircle ->setFillColor ( new \ImagickPixel ('black'));
 		$drawMaskCircle ->circle ( $config['source_size'][0] / 2, $config['source_size'][1] /2, $config['source_size'][0] / 2, $config['source_size'][1] -1 );
 		$mask->drawImage ( $drawMaskCircle );
-		
+
 		$original = new \Imagick ( $contaoImage );
 		$original->compositeImage ( $mask, \Imagick::COMPOSITE_COPYOPACITY, 0, 0 );
 
-		$createImage->compositeImage ( 
-			$original, 
-			\Imagick::COMPOSITE_DEFAULT, 
+		$createImage->compositeImage (
+			$original,
+			\Imagick::COMPOSITE_DEFAULT,
 			($config['target_size'][0] - $config['source_size'][0]) / 2,
 			($config['target_size'][1] - $config['source_size'][1]) / 2
-		);		
+		);
 
 		// add the arrow image
 		$joinImage = new \Imagick ( $config['join_image'] );
@@ -161,13 +185,13 @@ class ImageHelper extends \Controller {
 
 		// store the image in the image cache
 		$createImage->writeImage ( $targetPath );
-				
+
 		$result = '<img src="' . $targetPath .'"';
-		foreach ( $htmlAttributes as $name => $value ) 
+		foreach ( $htmlAttributes as $name => $value )
 			$result .= " " . $name . '="' . $value . '"';
 		$result .= "/>";
-	
-		return $result;	
+
+		return $result;
 	}
 
 
