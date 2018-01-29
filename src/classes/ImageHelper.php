@@ -64,19 +64,11 @@ class ImageHelper extends \Controller {
 	/**
 	 * Get an image object for the given file path or uuid and scale it to the given size.
 	 * If an important part is set for the image, it will be used.
-<<<<<<< HEAD
 	 * 
 	 * @param string $image  file object, path or uuid 
 	 * @param int $width 
 	 * @param int $height 
 	 * @return string	path of the generated image 
-=======
-	 *
-	 * @param string $image  path or uuid
-	 * @param int $width
-	 * @param int $height
-	 * @return string	path of the generated image
->>>>>>> 129797be782b22a4e97002017a169017a67cc971
 	 */
 	private static function getContaoImage ( $image, $width, $height ) {
 		if ( is_a ( $image, "Contao\\File")) {
