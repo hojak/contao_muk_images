@@ -1,6 +1,6 @@
 <?php
-
 namespace MUK\Images;
+
 
 /**
  * ImageHelper class, provides a generator for special newsletter images
@@ -9,11 +9,12 @@ class ImageHelper extends \Controller {
 
 	const TL_CONFIG_PARAMETER = "MUK_IMAGE_TYPES";
 
+
 	/**
 	 * standard configuration, override via $GLOBALS['TL_CONFIG']['MUK_IMAGE_TYPES'] = array ( "type" => array ( ... ) );
 	 * in the localconfig.php file of your contao installation
 	 *
-	 * A configuration consists of the following elements:
+	 * A configuration consists of the following elements: (for left / right (deprecated), circle_left, circle_right)
 	 * join_image:     path to the image, that has to be joined into
 	 * join_position:  top/left position for joining the image as array
 	 * join_scale:     target size for the joined image
@@ -26,6 +27,12 @@ class ImageHelper extends \Controller {
 	 * crop_bottom:    pixels to crop bottom
 	 * background:     css color (or 'transparent') for the generated image
 	 * file_suffix:    suffix for the generated images file in the cache directory
+	 * 
+	 * 
+	 * A configuration for an edge type consists of the following paraneters:
+	 * file_suffix:    suffix for the generated images file in the cache directory
+     * target_width:   width of the target image in pixels
+	 * edge_height:	   height of the edge to be cropped 
 	 *
 	 **/
 	private static $configuration = array (
@@ -71,13 +78,8 @@ class ImageHelper extends \Controller {
 	 * @return string	path of the generated image
 	 */
 	private static function getContaoImage ( $image, $width, $height ) {
-		if ( is_a ( $image, "Contao\\File")) {
-			$image = "" . $image->path;
-		} elseif ( \Validator::isUuid( $image ) ) {
-			$imgFile = \FilesModel::findByPk ( $image );
-		  	$image = $imgFile->path;
-		}
-
+		$image = self::getImageFile ( $image );
+		
 		if ( strpos ( $image, " ") !== false ) {
 			return array ( null, "<b>Fehler: Pfad- oder Bildname enthalten Leerzeichen!!</b>");
 		} else if ( ! preg_match ( '#^[a-zA-Z0-9/_\\.\\-]+$#i', $image)) {
@@ -85,6 +87,24 @@ class ImageHelper extends \Controller {
 		}
 
 		return array ( \Image::get ( $image, $width, $height, "crop" ), null );
+	}
+	
+	
+	/**
+	 * get the file of an image representation either in form of an Contao File 
+	 * or a uuid
+	 * @param <unknown> $image 
+	 * @return	path to image file  
+	 */
+	private static function getImageFile ( $image ) {
+		if ( is_a ( $image, "Contao\\File")) {
+			$image = "" . $image->path;
+		} elseif ( \Validator::isUuid( $image ) ) {
+			$imgFile = \FilesModel::findByPk ( $image );
+		  	$image = $imgFile->path;
+		}
+
+		return $image;
 	}
 
 
@@ -104,30 +124,102 @@ class ImageHelper extends \Controller {
     }
 
 
+
 	/**
-	 * create an image and return a corresponding image tag
-	 *
-	 * @param string $image  uid or path
-	 * @param mixed $type	 configuration type for the image to generate  or complete configuration array
-	 * @param array $htmlAttributes	array with attributes for the html tag
-	 * @return  string	html img tag
+	 * generate an image as definied by the given parameters
+	 * 
+	 * @param <unknown> $image 
+	 * @param <unknown> $type 	configuration key or array
+	 * @param <unknown> $htmlAttributes attribute for the generated html tag
+	 * @return  complete html tag for the image
 	 */
 	public static function generate ( $image, $type = "left", $htmlAttributes = array () ) {
 		$config = self::getConfig ( $type );
+		if ( is_array ( $type )) {
+			$type = $config['type'];
+		}
 
 		if ( ! $config ) {
 			return "<b>Keine Konfiguration für Typ '" . $type. "'!</b>";
 		}
+		
+		if( $type == "left" || $type == "right" || preg_match ( "#^circle$|_i#",$type )) {
+			return self::generate_circle ( $image, $htmlAttributes, $config);
+		} else if ( preg_match ( "#^edge$|_#i", $type )) {
+			return self::generate_edge ( $image, $htmlAttributes, $config);
+		} else {
+			return "<b>Fehler: Unbekannter Type '".$type."'!</b>";
+		}
+	}
+	
+	
+	/**
+	 * generate an image from the original with the target with and a cropped lower right corner
+	 * 
+	 * @param <unknown> $image 	image file or uuid
+	 * @param <unknown> $htmlAttributes attributes for the html tag
+	 * @param <unknown> $config 	configuration array
+	 * @return  image tag
+	 */
+	public static function generate_edge ( $image, $htmlAttributes, $config ) {
+		$imageFile = self::getImageFile ( $image );
+		
+		list( $width, $height ) = getimagesize ( $imageFile );
+		
+		$targetPath = self::getTargetFile ( $image , $config['file_suffix'] );
+		
+		$targetHeight = ceil ( $config['target_width'] * $height / $width );
 
+		list ( $contaoImage, $errorMsg) = self::getContaoImage ( $image, $config['target_width'], $targetHeight );
+		if( $errorMsg ) return $errorMsg;
+		
+		$mask = new \Imagick();
+		$mask->newImage ( $config['target_width'], $targetHeight, new \ImagickPixel ('transparent') );
+
+		$maskEdge = new \ImagickDraw ();
+		$maskEdge ->setStrokeAntialias ( true );
+		$maskEdge ->setFillColor ( new \ImagickPixel ('black'));
+		$maskEdge ->polygon ( array ( 
+			array ('x' => 0, 'y' => 0), 
+			array ('x' => 0, 'y' => $targetHeight-1),
+			array ('x' => $config['target_width']-1, 'y' => $targetHeight-1-$config['edge_height']),
+			array ('x' => $config['target_width']-1, 'y' => 0) 
+		));
+		$mask->drawImage ( $maskEdge );
+		
+		$original = new \Imagick ( $contaoImage );
+		$original->compositeImage ( $mask, \Imagick::COMPOSITE_COPYOPACITY, 0, 0 );
+		$original->setImageFormat ('png');
+		
+		$original->writeImage ( $targetPath );
+
+		$result = '<img src="' . $targetPath .'"';
+		foreach ( $htmlAttributes as $name => $value )
+			$result .= " " . $name . '="' . $value . '"';
+		$result .= "/>";
+
+		return $result;
+	}
+
+
+	 /**
+	  * create a circle cropped version of the original image with an added stamp image
+	  * 
+	  * @param <unknown> $image 	image file or uuid
+	  * @param <unknown> $htmlAttributes 	additional html attributes
+	  * @param <unknown> $config 	configuration array
+	  * @return  html image tag
+	  */
+	public static function generate_circle ( $image, $htmlAttributes, $config ) {
 		list ( $contaoImage, $errorMsg) = self::getContaoImage ( $image, $config['source_size'][0], $config ['source_size'][1] );
 		if( $errorMsg ) return $errorMsg;
-
-		$targetPath = self::getTargetFile ( $contaoImage , $config['file_suffix'] );
 
 		if ( ! $contaoImage ) {
 			return "<b>Fehler beim Auslesen des Orginal-Bildes!</b>";
 		}
 
+
+		$targetPath = self::getTargetFile ( $contaoImage , $config['file_suffix'] );
 
 		// create empty image
 		$createImage = new \Imagick();
