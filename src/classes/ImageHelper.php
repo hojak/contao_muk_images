@@ -188,6 +188,8 @@ class ImageHelper extends \Controller {
 		$mask->drawImage ( $maskEdge );
 		
 		$original = new \Imagick ( $contaoImage );
+		// the resource limit seems to fix problems with a php internal server error at muk!
+		$original->setResourceLimit ( 6,1);
 		$original->compositeImage ( $mask, \Imagick::COMPOSITE_COPYOPACITY, 0, 0 );
 		$original->setImageFormat ('png');
 		
@@ -218,11 +220,12 @@ class ImageHelper extends \Controller {
 			return "<b>Fehler beim Auslesen des Orginal-Bildes!</b>";
 		}
 
-
 		$targetPath = self::getTargetFile ( $contaoImage , $config['file_suffix'] );
 
 		// create empty image
 		$createImage = new \Imagick();
+		// the resource limit seems to fix problems with a php internal server error at muk!
+		$createImage->setResourceLimit ( 6,1);
 		$createImage->newImage ( $config['target_size'][0], $config['target_size'][1], new \ImagickPixel( $config['background'] ));
 		$createImage->setImageFormat ('png');
 
