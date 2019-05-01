@@ -166,9 +166,12 @@ class ImageHelper extends \Controller {
 		
 		list( $width, $height ) = getimagesize ( $imageFile );
 		
-		$targetPath = self::getTargetFile ( $image , $config['file_suffix'] );
+		$targetPath = self::getTargetFile ( $imageFile , $config['file_suffix'] );
 		
-		$targetHeight = ceil ( $config['target_width'] * $height / $width );
+		$targetHeight = ceil ( $config['target_width'] * $height / $width );			
+		if ( array_key_exists ( 'target_height', $config)) {
+			$targetHeight = max ( $target_height, $config['target_height']);
+		}
 
 		list ( $contaoImage, $errorMsg) = self::getContaoImage ( $image, $config['target_width'], $targetHeight );
 		if( $errorMsg ) return $errorMsg;
