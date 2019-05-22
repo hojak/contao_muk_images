@@ -166,8 +166,6 @@ class ImageHelper extends \Controller {
 		
 		list( $width, $height ) = getimagesize ( $imageFile );
 		
-		$targetPath = self::getTargetFile ( $imageFile , $config['file_suffix'] );
-		
 		$targetHeight = ceil ( $config['target_width'] * $height / $width );			
 		if ( array_key_exists ( 'target_height', $config)) {
 			$targetHeight = max ( $target_height, $config['target_height']);
@@ -175,6 +173,9 @@ class ImageHelper extends \Controller {
 
 		list ( $contaoImage, $errorMsg) = self::getContaoImage ( $image, $config['target_width'], $targetHeight );
 		if( $errorMsg ) return $errorMsg;
+
+		$targetPath = self::getTargetFile ( $contaoImage , $config['file_suffix'] );
+
 		
 		$mask = new \Imagick();
 		$mask->newImage ( $config['target_width'], $targetHeight, new \ImagickPixel ('transparent') );
