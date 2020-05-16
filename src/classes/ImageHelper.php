@@ -86,7 +86,20 @@ class ImageHelper extends \Controller {
 			return array ( null, "<b>Fehler: Der Pfad- und Bildname dürfen nur Buchstaben, Zahlen, - und _ enthalten!</b>");
 		}
 
-		return array ( \Image::get ( $image, $width, $height, "crop" ), null );
+		$container = \System::getContainer();
+		$rootDir = $container->getParameter('kernel.project_dir');
+
+		$image = 
+			$container
+				->get('contao.image.image_factory')
+				->create($rootDir.'/'.$image, [$width, $height, 'crop']);
+
+		if ( $image instanceof \Contao\Image\DeferredImage ) {
+			\log_message ( "enforcing image generation of deferred image: " . $image->getPath() );
+			$image = \System::getContainer()->get('contao.image.resizer')->resizeDeferredImage ( $image ) ;
+		}
+
+		return array ( substr($image->getPath(), strlen($rootDir)+1), null );		
 	}
 	
 	
@@ -190,21 +203,27 @@ class ImageHelper extends \Controller {
 			array ('x' => $config['target_width']-1, 'y' => 0) 
 		));
 		$mask->drawImage ( $maskEdge );
+	
+		try {	
+			$original = new \Imagick ( $contaoImage );
+			// the resource limit seems to fix problems with a php internal server error at muk!
+			$original->setResourceLimit ( 6,1);
+			$original->compositeImage ( $mask, \Imagick::COMPOSITE_COPYOPACITY, 0, 0 );
+			$original->setImageFormat ('png');
 		
-		$original = new \Imagick ( $contaoImage );
-		// the resource limit seems to fix problems with a php internal server error at muk!
-		$original->setResourceLimit ( 6,1);
-		$original->compositeImage ( $mask, \Imagick::COMPOSITE_COPYOPACITY, 0, 0 );
-		$original->setImageFormat ('png');
-		
-		$original->writeImage ( $targetPath );
+			$original->writeImage ( $targetPath );
 
-		$result = '<img src="' . $targetPath .'"';
-		foreach ( $htmlAttributes as $name => $value )
-			$result .= " " . $name . '="' . $value . '"';
-		$result .= "/>";
+			$result = '<img src="' . $targetPath .'"';
+			foreach ( $htmlAttributes as $name => $value )
+				$result .= " " . $name . '="' . $value . '"';
+			$result .= "/>";
 
-		return $result;
+			return $result;
+		} catch ( \ImagickException $e ) {
+			\log_message ( "Image Magick Exception: $e" );
+
+			return "Fehler bei der Bildverarbeitung: " . $e->getMessage();		
+		}
 	}
 
 
@@ -252,8 +271,14 @@ class ImageHelper extends \Controller {
 		$drawMaskCircle ->circle ( $config['source_size'][0] / 2, $config['source_size'][1] /2, $config['source_size'][0] / 2, $config['source_size'][1] -1 );
 		$mask->drawImage ( $drawMaskCircle );
 
-		$original = new \Imagick ( $contaoImage );
-		$original->compositeImage ( $mask, \Imagick::COMPOSITE_COPYOPACITY, 0, 0 );
+		try {
+			$original = new \Imagick ( $contaoImage );
+			$original->compositeImage ( $mask, \Imagick::COMPOSITE_COPYOPACITY, 0, 0 );
+		} catch ( \ImagickException $e ) {
+			\log_message ( "Imagemagick Exception opening image: $e" );
+			\log_message ( "contao_image: " . print_r ( $contaoImage,1));
+			return "Fehler bei der Bildverarbeitung ('Kreisbild'): " . $e->getMessage();
+		}
 
 		$createImage->compositeImage (
 			$original,
